@@ -1,41 +1,55 @@
-const canvas = document.getElementById("paintCanvas");
-const ctx = canvas.getContext("2d");
-const colorPicker = document.getElementById("colorPicker");
-const brushSize = document.getElementById("brushSize");
-const clearCanvas = document.getElementById("clearCanvas");
+// Initialize Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyDukGLg8EuOk4cIKrA6Ferq31fUHXOtOKw",
+    authDomain: "painter-20e1a.firebaseapp.com",
+    projectId: "painter-20e1a",
+    storageBucket: "painter-20e1a.firebasestorage.app",
+    messagingSenderId: "231187852047",
+    appId: "1:231187852047:web:f1239fdb14db13cb9a2c7a",
+    measurementId: "G-M44S6MZGX7"
+};
 
-canvas.width = window.innerWidth - 20;
-canvas.height = window.innerHeight - 100;
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 
-let painting = false;
+// Authentication Button
+const authButton = document.getElementById("authButton");
 
-function startPosition(e) {
-    painting = true;
-    draw(e);
-}
+authButton.addEventListener("click", () => {
+    const email = prompt("Enter your email:");
+    if (!email) return;
 
-function endPosition() {
-    painting = false;
-    ctx.beginPath();
-}
+    const password = prompt("Enter your password:");
+    if (!password) return;
 
-function draw(e) {
-    if (!painting) return;
-    
-    ctx.lineWidth = brushSize.value;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = colorPicker.value;
-    
-    ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
-}
+    auth.signInWithEmailAndPassword(email, password)
+        .then(user => {
+            alert("Logged in as: " + user.user.email);
+            authButton.textContent = "Logout";
+        })
+        .catch(error => {
+            if (error.code === "auth/user-not-found") {
+                if (confirm("No account found. Sign up?")) {
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .then(user => alert("Account created! Logged in as: " + user.user.email))
+                        .catch(err => alert(err.message));
+                }
+            } else {
+                alert(error.message);
+            }
+        });
+});
 
-canvas.addEventListener("mousedown", startPosition);
-canvas.addEventListener("mouseup", endPosition);
-canvas.addEventListener("mousemove", draw);
-
-clearCanvas.addEventListener("click", () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+// Logout feature
+auth.onAuthStateChanged(user => {
+    if (user) {
+        authButton.textContent = "Logout";
+        authButton.onclick = () => {
+            auth.signOut().then(() => {
+                authButton.textContent = "Login / Signup";
+            });
+        };
+    } else {
+        authButton.textContent = "Login / Signup";
+    }
 });
